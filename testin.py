@@ -83,9 +83,11 @@ def transaction():
             if ethflag==0:
                 finalTrans('BTC', 'ETH')
                 currencyIterator = iter(currencylist)
+                coin = '' + currencyIterator.__next__()
             else:
                 finalTrans('ETH', 'BTC')
                 currencyIterator = iter(currencylist)
+                coin = '' + currencyIterator.__next__()
 
 def finalTrans(c1, c2):
     global ethflag
@@ -105,6 +107,10 @@ def finalTrans(c1, c2):
     if compquantity>quantity1:
         initialBalance = quantity2
         print("^DO IT^\n")
+        if ethflag == 0:
+            ethflag = 1
+        else:
+            ethflag = 0
     else:
         print("^DONT DO IT^\n")
 
@@ -141,3 +147,4 @@ def calculation(x):
         return 1
     else:
         return 0
+run()
