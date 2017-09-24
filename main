@@ -39,7 +39,7 @@ def mkt_p_usd(mkt, count=20):
 
 def write_mkt_hist(mkt, count):
     """
-    This function is responsible for writing to the market history file, it will compile a .csv to track market values
+    This function [will maybe in the future be] responsible for writing to the market history file, it will compile a .csv to track market values
     :param mkt: the market file to write to
     :param count: how many transactions in the past we want to keep
     :return:
@@ -48,29 +48,40 @@ def write_mkt_hist(mkt, count):
     cList = bitty.get_market_history(mkt, count)['result']
     tList= []
     for c in cList:
-        tList.append(c["TimeStamp"])
+        tList.append(c["Id"])
     #print(cList)
     with open(mkt + "data.csv", 'a') as f:
         pass
     with open(mkt + "data.csv", 'r') as f:
         fList=f.readlines()
+        print(len(fList))
         if len(fList) < count:
             with open(mkt + "data.csv", 'a') as f:
                 for t in tList:
-                    f.write(t)
+                    f.write(str(t))
                     f.write("\n")
         else:
-            for f in fList:
-                f = f.strip('\n')
-                for t in tList:
-                    if t in fList == true:
-                        print("save me")
-                    else:
-                        pass
-                        #with open(mkt + "data.csv", 'a') as f:
-                        #    for t in tList:
-                        #        f.write(t)
-                        #        f.write("\n")
+            #print(fList)
+            i=0
+            for l in fList:
+                fList[i] = l[:-1]
+                i+=1
+
+            for t in tList:
+
+                if t in fList:
+                    print("sorry")
+                    print(tList.index(t))
+                else:
+                    #f.write(str(t))
+                    #f.write("\n")
+                    #print("else")
+                    #print(fList[tList.index(t)])
+                    print(t in fList)
+                    #print(t)
+            #print(fList)
+
+
 
 def main():
     print("VTC: $", mkt_p_usd("BTC-VTC"))
