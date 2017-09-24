@@ -1,5 +1,6 @@
 from bittrex import Bittrex
 bitty = Bittrex(None, None)
+from time import sleep
 
 def usdt_btc_l():
     """This function returns the long average price of BTC in USDT"""
@@ -56,7 +57,7 @@ def write_mkt_hist(mkt, count):
         fList=f.readlines()
         print(len(fList))
         if len(fList) < count:
-            with open(mkt + "data.csv", 'a') as f:
+            with open(mkt + "data.csv", 'w') as f:
                 for t in tList:
                     f.write(str(t))
                     f.write("\n")
@@ -65,30 +66,30 @@ def write_mkt_hist(mkt, count):
             i=0
             for l in fList:
                 fList[i] = l[:-1]
+                fList[i] = int(fList[i])
                 i+=1
 
             for t in tList:
 
                 if t in fList:
-                    print("sorry")
-                    print(tList.index(t))
+                    pass
                 else:
-                    #f.write(str(t))
-                    #f.write("\n")
-                    #print("else")
-                    #print(fList[tList.index(t)])
-                    print(t in fList)
-                    #print(t)
-            #print(fList)
+                    with open(mkt + "data.csv", 'a') as f:
+                        f.write(str(t))
+                        f.write("\n")
 
+def build_mkt_hist(mkt, count=20):
+    while True:
+        sleep(10)
+        write_mkt_hist(mkt, count)
 
 
 def main():
-    print("VTC: $", mkt_p_usd("BTC-VTC"))
+    #print("VTC: $", mkt_p_usd("BTC-VTC"))
     #print("XVG: $", mkt_p_usd("BTC-XVG", 50))
     #print(usdt_btc_l())
     #print(usdt_btc_s())
-    write_mkt_hist("BTC-AUR",20)
+    build_mkt_hist("BTC-ETH", 100)
 
 
 if __name__ == "__main__":
