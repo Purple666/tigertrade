@@ -2,17 +2,25 @@
 from bittrex import Bittrex
 mybittrex = Bittrex(None, None)
 
+#used in getting BTC balance from account - initializaed to 1 for testing purposes
 initialBalance = 1
+#used to distinguish what currency your holdings are currently in; begins as BTC but can be changed
 ethflag = 0
 
 currencylist = ['LTC', 'DASH', 'XMR', 'DGB', 'BTS', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT', 'SNGLS', 'REP', 'NEO', 'ZEC', 'TIME', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'TKN', 'HMQ', 'ANT', 'SC', 'BAT', '1ST', 'QRL', 'CRB', 'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ', 'ADX', 'OMG', 'CVC', 'QTUM', 'BCC']
 
-
 def run():
+    #getBalance()
     transaction()
+'''
+#retrieves balance information from account based on api key/secret
+def getBalance():
+    global initialBalance
+    balance = mybittrex.get_balance('BTC')['result']
+    initialBalance = balance['Balance']
 
 #dynamically retrieve ETH tradable currencies and stores stock symbols......takes forever.
-'''
+
 def getList():
     print("Retrieving exchange list", end='')
     currencies = mybittrex.get_currencies()['result']
@@ -51,22 +59,29 @@ def transaction():
     #initially, funds are in BTC
     #iterates through list of coins in while true loop
     currencyIterator = iter(currencylist)
+    #will continuously loop...for now
     while 1:
-        # move to the next coin in the list
-        coin = '' + currencyIterator.__next__()
+        # attempt to move to the next altcoin in the list
+        try:
+            coin = '' + currencyIterator.__next__()
+        #in the event there is none, create a new iterator and begin again
+        except StopIteration:
+            currencyIterator = iter(currencylist)
+        #determine if the transaction with the particular altcoin is profitable
         det = calculation(coin)
-
+        #if it's profitable, complete the transaction and change the flag to swap BTC/ETH
         if det == 1:
-            print("DO IT")
+            print("^DO IT^\n")
             if ethflag == 0:
                 ethflag =1
             else:
                 ethflag =0
+        #if it's not profitable, do nothing
         else:
-            print("DONT DO IT")
+            print("^DONT DO IT^\n")
+
+        #for testing purposes
         print(ethflag)
-
-
 
 def calculation(x):
     global initialBalance
