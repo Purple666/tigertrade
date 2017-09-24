@@ -61,17 +61,8 @@ def transaction():
     #iterates through list of coins in while true loop
     currencyIterator = iter(currencylist)
     #will continuously loop...for now
+    coin = '' + currencyIterator.__next__()
     while 1:
-        # attempt to move to the next altcoin in the list
-        try:
-            coin = '' + currencyIterator.__next__()
-        #in the event there is none, create a new iterator and begin again
-        except StopIteration:
-            if ethflag==0:
-                finalTrans('BTC', 'ETH')
-            else:
-                finalTrans('ETH', 'BTC')
-            currencyIterator = iter(currencylist)
         #determine if the transaction with the particular altcoin is profitable
         det = calculation(coin)
         #if it's profitable, complete the transaction and change the flag to swap BTC/ETH
@@ -84,6 +75,17 @@ def transaction():
         #if it's not profitable, do nothing
         else:
             print("^DONT DO IT^\n")
+        # attempt to move to the next altcoin in the list
+        try:
+            coin = '' + currencyIterator.__next__()
+        #in the event there is none, create a new iterator and begin again
+        except StopIteration:
+            if ethflag==0:
+                finalTrans('BTC', 'ETH')
+                currencyIterator = iter(currencylist)
+            else:
+                finalTrans('ETH', 'BTC')
+                currencyIterator = iter(currencylist)
 
 def finalTrans(c1, c2):
     global ethflag
@@ -99,7 +101,7 @@ def finalTrans(c1, c2):
     else:
         quantity2 = localInitialBalance*getValue('BTC', 'ETH')
         compquantity = quantity2*getValue('USDT', c2)
-    print(quantity2)
+    print(compquantity)
     if compquantity>quantity1:
         initialBalance = quantity2
         print("^DO IT^\n")
