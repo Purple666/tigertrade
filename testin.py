@@ -113,20 +113,20 @@ def calculation(x):
     #simulate trade with a local balance (so not to actually adjust the balance)
     #account for fee
     altbalance = (initialBalance/getValue(c1, x))-.0025*(initialBalance/getValue(c1, x))
-    print(x, ", ", altbalance)
+    print(x, ", can buy ", altbalance)
     # buy c2 with this quantity of altcoin based on exchange rate and account for second fee
     c2Balance = (altbalance*getValue(c2, x))-.0025*(altbalance*getValue(c2, x))
-    print(c2Balance)
+    print("New balance: ", c2Balance, " ", c2)
     #calculate new balance by converting and comparing to initial currency balance
     if ethflag == 0:
         c2ValueInc1 = (c2Balance * (getValue(c1, c2)))
     else:
         c2ValueInc1 = (c2Balance / (getValue(c2, c1)))
     #calculate percent difference after trades
-    diff = (c2ValueInc1 / initialBalance)
+    diff = (1-(c2ValueInc1 / initialBalance))*100
     print("Percent change: ", diff, "%")
     #determine if trade is advisable
-    if diff>1:
+    if diff>0:
         initialBalance = c2Balance
         return 1
     else:
