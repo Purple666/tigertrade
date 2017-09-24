@@ -41,76 +41,61 @@ def getValue(s, t):
     #construct market string from input
     market = s + "-" + t
     #create a profile for recent transactions
-    #print(market)
     priceprofile = mybittrex.get_market_history(market)['result']
     pricelist = []
     #retrieve price information from priceprofile
     for pp in priceprofile:
         pricelist.append(pp['Price'])
-    #total the prices from the profile and average them
+    #average the prices from the profile and return
     total = 0
     for p in pricelist:
         total += p
-    #calculate the average of all retrieved prices
     return total/len(pricelist)
 
 #carries out transactions
 def transaction():
     global ethflag
-    #initially, funds are in BTC
-    #iterates through list of coins in while true loop
+    #iterates through list of coins
     currencyIterator = iter(currencylist)
-    #will continuously loop...for now
     coin = '' + currencyIterator.__next__()
     while 1:
-        #determine if the transaction with the particular altcoin is profitable
+        #determine if the transaction is profitable
         det = calculation(coin)
         #if it's profitable, complete the transaction and change the flag to swap BTC/ETH
         if det == 1:
             print("^DO IT^\n")
-            if ethflag == 0:
-                ethflag =1
-            else:
-                ethflag =0
-        #if it's not profitable, do nothing
+            ethflag = not ethflag
+        #if it's not profitable, do not advise
         else:
             print("^DONT DO IT^\n")
         # attempt to move to the next altcoin in the list
         try:
-            coin = '' + currencyIterator.__next__()
-        #in the event there is none, create a new iterator and begin again
+            coin = ''+currencyIterator.__next__()
+        #in the event there is none, check if it is profitable to buy BTC/ETH with current holdings
         except StopIteration:
-            if ethflag==0:
-                finalTrans('BTC', 'ETH')
-                currencyIterator = iter(currencylist)
-                coin = '' + currencyIterator.__next__()
-            else:
-                finalTrans('ETH', 'BTC')
-                currencyIterator = iter(currencylist)
-                coin = '' + currencyIterator.__next__()
+            finalTrans('BTC', 'ETH')
+            #create new iterator and begin again
+            currencyIterator = iter(currencylist)
+            coin = '' + currencyIterator.__next__()
 
 def finalTrans(c1, c2):
     global ethflag
     global initialBalance
-    localInitialBalance = initialBalance
-    localInitialBalance -= initialBalance * .0025
     print("Initial balance: ", initialBalance, c1)
-    quantity1 = localInitialBalance*getValue('USDT', c1)
+    quantity1 = (initialBalance*getValue('USDT', c1))
     print(quantity1)
     if(ethflag==0):
-        quantity2 = localInitialBalance/getValue('BTC', 'ETH')
+        quantity2 = (initialBalance/getValue('BTC', 'ETH'))-.0025*(initialBalance/getValue('BTC', 'ETH'))
         compquantity=quantity2*getValue('USDT', c2)
     else:
-        quantity2 = localInitialBalance*getValue('BTC', 'ETH')
+        quantity2 = initialBalance*getValue('BTC', 'ETH')-.0025*(initialBalance*getValue('BTC', 'ETH'))
         compquantity = quantity2*getValue('USDT', c2)
     print(compquantity)
-    if compquantity>quantity1:
+    diff = (compquantity / initialBalance)
+    if diff>quantity1:
         initialBalance = quantity2
         print("^DO IT^\n")
-        if ethflag == 0:
-            ethflag = 1
-        else:
-            ethflag = 0
+        ethflag=not ethflag
     else:
         print("^DONT DO IT^\n")
 
@@ -125,26 +110,24 @@ def calculation(x):
         c2='BTC'
     # find c1 balance from account - now hard coded, will be changed to reflect account balances
     print("Initial balance: ", initialBalance, c1)
-    # find approx quantity of altcoin that can be purchased with your balance and account for first fee
-    localInitialBalance = initialBalance
-    localInitialBalance-= initialBalance*.0025
-    quantity = localInitialBalance/getValue(c1, x)
-    print(x, ", ", quantity)
+    #simulate trade with a local balance (so not to actually adjust the balance)
+    #account for fee
+    altbalance = (initialBalance/getValue(c1, x))-.0025*(initialBalance/getValue(c1, x))
+    print(x, ", ", altbalance)
     # buy c2 with this quantity of altcoin based on exchange rate and account for second fee
-    c2Balance = quantity * getValue(c2, x)
-    c2Balance -= c2Balance*.0025
+    c2Balance = (altbalance*getValue(c2, x))-.0025*(altbalance*getValue(c2, x))
     print(c2Balance)
-    #calculate new balance
-    #newBalance = (c2Balance * getValue('BTC', 'ETH')) / initialBalance
+    #calculate new balance by converting and comparing to initial currency balance
     if ethflag == 0:
-        c2Value = (c2Balance * (getValue('BTC', 'ETH')))
+        c2ValueInc1 = (c2Balance * (getValue(c1, c2)))
     else:
-        c2Value = (c2Balance / (getValue('BTC', 'ETH')))
-    print("Resulting value:", c2Value, " ", c1, "\n")
-    #if the ending balance exceeds the beginning, return 1 to signify that trade is advised.  otherwise, return 0
-    if localInitialBalance < c2Value:
+        c2ValueInc1 = (c2Balance / (getValue(c2, c1)))
+    #calculate percent difference after trades
+    diff = (c2ValueInc1 / initialBalance)
+    print("Percent change: ", diff, "%")
+    #determine if trade is advisable
+    if diff>1:
         initialBalance = c2Balance
         return 1
     else:
         return 0
-run()
