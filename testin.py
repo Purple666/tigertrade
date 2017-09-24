@@ -95,7 +95,7 @@ def finalTrans(c1, c2):
     print(quantity1)
     if(ethflag==0):
         quantity2 = localInitialBalance/getValue('BTC', 'ETH')
-        compquantity=quantity2/getValue('USDT', c2)
+        compquantity=quantity2*getValue('USDT', c2)
     else:
         quantity2 = localInitialBalance*getValue('BTC', 'ETH')
         compquantity = quantity2*getValue('USDT', c2)
