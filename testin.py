@@ -123,10 +123,10 @@ def calculation(x):
     else:
         c2ValueInc1 = (c2Balance / (getValue(c2, c1)))
     #calculate percent difference after trades
-    diff = (1-(c2ValueInc1 / initialBalance))*100
-    print("Percent change: ", diff, "%")
+    diff = c2ValueInc1 / initialBalance
+    print("Ratio: ", diff)
     #determine if trade is advisable
-    if diff>0:
+    if diff>1:
         initialBalance = c2Balance
         return 1
     else:
