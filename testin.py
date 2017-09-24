@@ -12,6 +12,7 @@ currencylist = ['LTC', 'DASH', 'XMR', 'DGB', 'BTS', 'XRP', 'XEM', 'XLM', 'FCT', 
 def run():
     #getBalance()
     transaction()
+
 '''
 #retrieves balance information from account based on api key/secret
 def getBalance():
@@ -66,6 +67,10 @@ def transaction():
             coin = '' + currencyIterator.__next__()
         #in the event there is none, create a new iterator and begin again
         except StopIteration:
+            if ethflag==0:
+                finalTrans('BTC', 'ETH')
+            else:
+                finalTrans('ETH', 'BTC')
             currencyIterator = iter(currencylist)
         #determine if the transaction with the particular altcoin is profitable
         det = calculation(coin)
@@ -80,13 +85,30 @@ def transaction():
         else:
             print("^DONT DO IT^\n")
 
-        #for testing purposes
-        print(ethflag)
+def finalTrans(c1, c2):
+    global ethflag
+    global initialBalance
+    localInitialBalance = initialBalance
+    localInitialBalance -= initialBalance * .0025
+    print("Initial balance: ", initialBalance, c1)
+    quantity1 = localInitialBalance*getValue('USDT', c1)
+    print(quantity1)
+    if(ethflag==0):
+        quantity2 = localInitialBalance/getValue('BTC', 'ETH')
+        compquantity=quantity2/getValue('USDT', c2)
+    else:
+        quantity2 = localInitialBalance*getValue('BTC', 'ETH')
+        compquantity = quantity2*getValue('USDT', c2)
+    print(quantity2)
+    if compquantity>quantity1:
+        initialBalance = quantity2
+        print("^DO IT^\n")
+    else:
+        print("^DONT DO IT^\n")
 
 def calculation(x):
     global initialBalance
     global ethflag
-
     if ethflag==0:
         c1='BTC'
         c2='ETH'
@@ -95,25 +117,25 @@ def calculation(x):
         c2='BTC'
     # find c1 balance from account - now hard coded, will be changed to reflect account balances
     print("Initial balance: ", initialBalance, c1)
-    # find approx quantity of altcoin that can be purchased with your balance
-    quantity = initialBalance/getValue(c1, x)
+    # find approx quantity of altcoin that can be purchased with your balance and account for first fee
+    localInitialBalance = initialBalance
+    localInitialBalance-= initialBalance*.0025
+    quantity = localInitialBalance/getValue(c1, x)
     print(x, ", ", quantity)
-
-    # buy c2 with this quantity of altcoin based on exchange rate
+    # buy c2 with this quantity of altcoin based on exchange rate and account for second fee
     c2Balance = quantity * getValue(c2, x)
+    c2Balance -= c2Balance*.0025
     print(c2Balance)
     #calculate new balance
     #newBalance = (c2Balance * getValue('BTC', 'ETH')) / initialBalance
     if ethflag == 0:
-        c2Value = c2Balance * (getValue('BTC', 'ETH'))
+        c2Value = (c2Balance * (getValue('BTC', 'ETH')))
     else:
-        c2Value = c2Balance / (getValue('BTC', 'ETH'))
+        c2Value = (c2Balance / (getValue('BTC', 'ETH')))
     print("Resulting value:", c2Value, " ", c1, "\n")
     #if the ending balance exceeds the beginning, return 1 to signify that trade is advised.  otherwise, return 0
-    if initialBalance < c2Value:
+    if localInitialBalance < c2Value:
         initialBalance = c2Balance
         return 1
     else:
         return 0
-
-run()
