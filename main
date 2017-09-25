@@ -1,6 +1,8 @@
 from bittrex import Bittrex
 bitty = Bittrex(None, None)
 from time import sleep
+import json
+
 
 def usdt_btc_l():
     """This function returns the long average price of BTC in USDT"""
@@ -46,50 +48,78 @@ def write_mkt_hist(mkt, count):
     :return:
     """
 
-    cList = bitty.get_market_history(mkt, count)['result']
-    tList= []
-    for c in cList:
-        tList.append(c["Id"])
+    tList = bitty.get_market_history(mkt, count)['result']
+    fiList, fpList, fqList, ftList, foList = [], [], [], [], []
+    tiList, tpList, tqList, ttList,toList = [], [], [], [], []
+    for c in tList:
+        tiList.append((c["Id"]))
+        tpList.append((c["Price"]))
+        tqList.append((c["Quantity"]))
+        toList.append((c["OrderType"]))
+        ttList.append((c["TimeStamp"]))
     #print(cList)
     with open(mkt + "data.csv", 'a') as f:
         pass
     with open(mkt + "data.csv", 'r') as f:
-        fList=f.readlines()
-        print(len(fList))
-        if len(fList) < count:
+        fList = []
+        tLine = []
+        for line in f:
+            tLine= f.readline()
+            print(line)
+            if fList == []:
+                print("none")
+        #print(tLine)
+        if tLine == None:
             with open(mkt + "data.csv", 'w') as f:
                 for t in tList:
                     f.write(str(t))
                     f.write("\n")
-        else:
-            #print(fList)
-            i=0
-            for l in fList:
-                fList[i] = l[:-1]
-                fList[i] = int(fList[i])
-                i+=1
-
-            for t in tList:
-
-                if t in fList:
-                    pass
-                else:
-                    with open(mkt + "data.csv", 'a') as f:
-                        f.write(str(t))
-                        f.write("\n")
+            """
+            else:
+                #print(fList)
+                i=0
+                for l in fList:
+                    fList[i] = l[:-1]
+                    fList[i] = int(fList[i])
+                    i+=1
+        
+                for t in tList:
+        
+                    if t in fList:
+                        pass
+                    else:
+                        with open(mkt + "data.csv", 'a') as f:
+                            f.write(str(t))
+                            f.write("\n")
+"""
 
 def build_mkt_hist(mkt, count=20):
     while True:
+        write_mkt_json(mkt, count)
         sleep(10)
-        write_mkt_hist(mkt, count)
 
+def wrt_mkt_json(mkt, count=20):
+    mList = bitty.get_market_history(mkt, count)['result']
+    try:
+        with open(mkt + "data.json", "r") as f:
+            file_raw = f.readlines()
+            #file_list = json.dumps(file_raw)
+            for m in mList:
+                if m["Id"] in file_raw["Id"]:
+                    pass
+            #Sfor m in mList:
+
+    except FileNotFoundError:
+        with open(mkt + "data.json", "w") as f:
+            json.dump(mList, f)
 
 def main():
     #print("VTC: $", mkt_p_usd("BTC-VTC"))
     #print("XVG: $", mkt_p_usd("BTC-XVG", 50))
     #print(usdt_btc_l())
     #print(usdt_btc_s())
-    build_mkt_hist("BTC-ETH", 100)
+    #build_mkt_hist("BTC-ETH", 100)
+    wrt_mkt_json("BTC-ETH", 50)
 
 
 if __name__ == "__main__":
