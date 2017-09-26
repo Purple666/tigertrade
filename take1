@@ -201,9 +201,3 @@ def calculation(x):
         return 1
     else:
         return 0
-
-run()
-
-#try to get lowest offered trade in coins and do calculations with that, complete calculations
-#find way to stop getting fractions for coin left as balances (aka find use of max)
-#fix
