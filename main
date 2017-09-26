@@ -1,5 +1,5 @@
 from bittrex import Bittrex
-bitty = Bittrex(None, None)
+bitty = Bittrex("cf9b2c81eff04581964b9f7ceb15ff86", "4a0be2d61a1e47a89e3c0c647532f2d5")
 from time import sleep
 import json
 
@@ -45,13 +45,19 @@ def build_mkt_hist(mkt, count=20):
     while True:
         wrt_mkt_json(mkt, count)
         print("done")
-        sleep(10)
+        sleep(1)
 
 def wrt_mkt_json(mkt, count=20):
     mList = bitty.get_market_history(mkt, count)['result']
     try:
         with open(mkt + "data.json", "r") as f:
-            file_list = json.load(f)
+            raw_file = f.readline()
+            file_list = json.loads(raw_file)
+            print("filelist", file_list)
+            print("rawfile ", raw_file)
+            print("mlist   ", mList)
+            if mList == file_list:
+                print("kill yourself")
             idList =[]
             for l in file_list:
                 idList.append(l["Id"])
@@ -59,16 +65,25 @@ def wrt_mkt_json(mkt, count=20):
                 if m["Id"] in idList:
                     pass
                 else:
-                    with open(mkt + "data.json", "a") as f:
-                        json.dump(m, f)
+                    pass
+                    file_list.append(m)
+                    #print(file_list)
+
+        with open(mkt + "data.json", "w") as f:
+            print(file_list)
+            json.dump(file_list, f)
+
 
     except FileNotFoundError:
         with open(mkt + "data.json", "w") as f:
             json.dump(mList, f)
+            print(f)
             print("Made initial", mkt, "data file.")
 
 def main():
+    #print(bitty.get_orderbook("BTC-VTC", "both"))
     build_mkt_hist("BTC-ETH", 1)
+
 
 
 if __name__ == "__main__":
