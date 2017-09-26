@@ -41,35 +41,45 @@ def mkt_p_usd(mkt, count=20):
     return (avg * btcp)
 
 def wrt_mkt_json(mkt, count=20):
+    """This file is used to build a JSON with a long-term market history
+
+    It fetches the recent history and compares it against the file that already exists. If no file exists one is created
+    and written to. If it exists then the current data is evaluated to see if it is duplicate and then written depending
+    on that evaluation."""
 
     try:
         with open(mkt + "data.json", "r") as f:
+            write =0
             mList = bitty.get_market_history(mkt, count)['result']
             file_list = json.loads(f.readline())
             for m in mList:
-                if m in file_list:
+                if m in file_list: #checking for duplicates
                     pass
                 else:
-                    pass
+                    write = 1
                     file_list.append(m)
 
-        with open(mkt + "data.json", "w") as f:
-            json.dump(file_list, f)
+        if write==1:
+            with open(mkt + "data.json", "w") as f:
+                json.dump(file_list, f) #writes new data, if any
+                return(mkt + " file updated.")
+        else:
+            return("No changes written to " + mkt + " file.")
 
     except FileNotFoundError:
         init_file(mkt, count)
 
 def init_file(mkt, count=20):
+    """Simply writes a JSON with the recent market history, will delete history if your file already exists"""
     with open(mkt + "data.json", "w") as f:
         json.dump(bitty.get_market_history(mkt, count)['result'], f)
         print("Made initial", mkt, "data file.")
 
 def main():
     while True:
-        wrt_mkt_json("BTC-ETH", 20)
-        wrt_mkt_json("BTC-VTC", 20)
+        print(wrt_mkt_json("BTC-ETH", 20))
+        print(wrt_mkt_json("BTC-VTC", 20))
         #wrt_mkt_json("ETH-VTC", 20)
-        print("done")
         sleep(10)
 
 
