@@ -1,0 +1,209 @@
+import time
+
+#links to acct with api key
+from bittrex import Bittrex
+mybittrex = Bittrex(None, None)
+
+#used in getting BTC balance from account
+initialBalance=1
+#used to distinguish what currency your holdings are currently in; begins as BTC but can be changed
+ethflag = 0
+
+currencylist = ['LTC', 'DASH', 'XMR', 'DGB', 'BTS', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT', 'SNGLS', 'REP', 'NEO', 'ZEC', 'TIME', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'TKN', 'HMQ', 'ANT', 'SC', 'BAT', '1ST', 'QRL', 'CRB', 'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ', 'ADX', 'OMG', 'CVC', 'QTUM', 'BCC']
+
+def run():
+    getBalance()
+    #transaction()
+
+#retrieves balance information from account based on api key/secret
+def getBalance():
+    global initialBalance
+    global ethflag
+    curr = 'BTC'
+
+    initialBalance = mybittrex.get_balance('BTC')['result']['Balance']
+    if initialBalance ==0:
+        curr='ETH'
+        ethflag = 1
+        initialBalance = mybittrex.get_balance(curr)['result']['Balance']
+
+    print("Starting funds: ", initialBalance, curr, "(Approximately $", format(initialBalance*getValue('USDT', 'BTC'), ".2f"), ")\n")
+
+'''
+#dynamically retrieve ETH tradable currencies and stores stock symbols......takes forever.
+
+def getList():
+    print("Retrieving exchange list", end='')
+    currencies = mybittrex.get_currencies()['result']
+    for c in currencies:
+        if (mybittrex.get_market_history(eth + "-" + c['Currency']))['success']:
+            currencylist.append(c['Currency'])
+            print(".", end='', sep='', flush=True)
+        else:
+            pass
+
+    print("\nExchange list retrieved:")
+    print(currencylist)
+'''
+
+#gather pricing information based on input
+def getValue(s, t):
+    #construct market string from input
+    market = s + "-" + t
+    #create a profile for recent transactions
+    priceprofile = mybittrex.get_market_history(market)['result']
+    pricelist = []
+    #retrieve price information from priceprofile
+    for pp in priceprofile:
+        pricelist.append(pp['Price'])
+    #average the prices from the profile and return
+    total = 0
+    for p in pricelist:
+        total += p
+    return total/len(pricelist)
+
+#carries out transactions
+def transaction():
+    global ethflag
+    #iterates through list of coins
+    currencyIterator = iter(currencylist)
+    coin = '' + currencyIterator.__next__()
+    while 1:
+        #determine if the transaction is profitable
+        det = calculation(coin)
+        #if it's profitable, complete the transaction and change the flag to swap BTC/ETH
+        if det == 1:
+            print("Transactions completed.\n")
+            ethflag = not ethflag
+            #retrieve the appropriate currency account balance
+            if ethflag ==1:
+                initialBalance = mybittrex.get_balance('ETH')['result']['Balance']
+            else:
+                initialBalance = mybittrex.get_balance('BTC')['result']['Balance']
+        #if it's not profitable, do not advise
+        else:
+            print("Transactions passed.\n")
+        # attempt to move to the next altcoin in the list
+        try:
+            coin = ''+currencyIterator.__next__()
+        #in the event there is none, check if it is profitable to buy BTC/ETH with current holdings
+        except StopIteration:
+            det = finalTrans('BTC', 'ETH')
+            if det == 1:
+                print("Transaction completed.\n")
+                ethflag = not ethflag
+                if ethflag == 1:
+                    initialBalance = mybittrex.get_balance('ETH')['result']['Balance']
+                else:
+                    initialBalance = mybittrex.get_balance('BTC')['result']['Balance']
+            else:
+                print("Transaction passed.\n")
+            break
+            #print("Transactions completed, starting again...")
+            #create new iterator and begin again
+            #currencyIterator = iter(currencylist)
+            #coin = '' + currencyIterator.__next__()
+
+
+def finalTrans(c1, c2):
+    global ethflag
+    global initialBalance
+    #calculate ratios
+    c1c2ratio = getValue('BTC', 'ETH')
+
+    localInitialBalance =.9975*initialBalance
+    if(ethflag==0):
+        print("Initial balance: ", localInitialBalance, c1)
+        quantity2 = (localInitialBalance*.9975)/c1c2ratio
+        c2ValueInc1 = (quantity2 * c1c2ratio)
+    else:
+        print("Initial balance: ", localInitialBalance, c2)
+        quantity2 = (localInitialBalance*.9975)*c1c2ratio
+        c2ValueInc1 = (quantity2 / c1c2ratio)
+    print("New balance: ", quantity2)
+    diff = ( c2ValueInc1/ localInitialBalance)
+    if diff>1:
+        print("Transaction...")
+        if ethflag ==0:
+            mybittrex.buy_limit('BTC-ETH', localInitialBalance, c1c2ratio)
+            time.sleep(5)
+        else:
+            mybittrex.sell_limit('BTC-ETH', localInitialBalance, c1c2ratio)
+        while 1:
+            if mybittrex.get_open_orders()['result']:
+                pass
+            else:
+                break
+        print("Complete.")
+        return 1
+    else:
+        return 0
+
+def calculation(x):
+    global initialBalance
+    global ethflag
+    if ethflag==0:
+        c1='BTC'
+        c2='ETH'
+    else:
+        c1='ETH'
+        c2='BTC'
+    #calculates balance with fees
+    #first transaction ppu
+    c1xratio = getValue(c1, x)
+    #second transaction ppu
+    c2xratio = getValue(c2, x)
+    #final ratio for gain/loss in end
+    c1c2ratio = getValue(c1, c2)
+    c2c1ratio = getValue(c2, c1)
+    localInitialBalance = .9975*initialBalance
+    # find c1 balance from account - now hard coded, will be changed to reflect account balances
+    print("Initial balance: ", localInitialBalance, c1)
+    #calculate altcoin balance
+    altbalance = .9975*(localInitialBalance / c1xratio)
+    print("Balance to trade: ", altbalance, x)
+    # buy c2 with this quantity of altcoin based on exchange rate and account for second fee
+    c2Balance = (altbalance*c2xratio)
+    print("Resulting balance: ", c2Balance, c2)
+    #calculate new balance by converting and comparing to initial currency balance
+    if ethflag == 0:
+        c2ValueInc1 = (c2Balance * c1c2ratio)
+    else:
+        c2ValueInc1 = (c2Balance / c2c1ratio)
+    #calculate percent difference after trades
+    diff = c2ValueInc1 / localInitialBalance
+    print("Ratio: ", diff)
+    #determine if trade is advisable
+    if diff>1:
+        #establish the markets to be traded between
+        market1 = c1 + "-" + x
+        market2 = c2 + "-" + x
+        print("First transaction...")
+        #buy from the first market
+        mybittrex.buy_limit(market1, localInitialBalance, c1xratio)
+        #wait for order to be placed and, while the order is still open, stall
+        time.sleep(5)
+        while 1:
+            if mybittrex.get_open_orders()['result']:
+                pass
+            else:
+                break
+        print("Complete.")
+        print("Second transaction...")
+        mybittrex.sell_limit(market2, altbalance, c2xratio)
+        time.sleep(5)
+        while 1:
+            if mybittrex.get_open_orders()['result']:
+                pass
+            else:
+                break
+        print("Complete.")
+        return 1
+    else:
+        return 0
+
+run()
+
+#try to get lowest offered trade in coins and do calculations with that, complete calculations
+#find way to stop getting fractions for coin left as balances (aka find use of max)
+#fix
