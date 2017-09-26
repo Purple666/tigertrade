@@ -1,0 +1,77 @@
+from bittrex import Bittrex
+bitty = Bittrex("None", "None")
+from time import sleep
+import json
+
+
+def usdt_btc_l():
+    """This function returns the long average price of BTC in USDT"""
+    return(avg_mkt_p("USDT-BTC", 100))
+
+def usdt_btc_s():
+    """This function returns the short average price of BTC in USDT"""
+    return(avg_mkt_p("USDT-BTC", 5))
+
+def avg_mkt_p(mkt, count=20):
+    """
+    This function returns the avg price of any market currency over the last (count) trades
+    Price will be in the preceding currency given in the mkt argument ("ETH-LTC" will return a price in ETH)
+
+    count: the number of most recent trades to average
+    mkt: string determining market ("USDT-BTC", "BTC-VTC")
+    """
+    clist = bitty.get_market_history(mkt, count)['result']
+    plist = []
+    for c in clist:
+        plist.append(c['Price'])
+    total = 0
+    for p in plist:
+        total += p
+
+    return(total/len(plist))
+
+def mkt_p_usd(mkt, count=20):
+    """
+    This function returns the price in USD of any BTC-tradable currency over the last (count) trades
+
+    mkt: string determining market ("USDT-BTC", "BTC-VTC")
+    """
+    avg = avg_mkt_p(mkt, count)
+    btcp = (avg_mkt_p("USDT-BTC", count))
+    return (avg * btcp)
+
+def wrt_mkt_json(mkt, count=20):
+
+    try:
+        with open(mkt + "data.json", "r") as f:
+            mList = bitty.get_market_history(mkt, count)['result']
+            file_list = json.loads(f.readline())
+            for m in mList:
+                if m in file_list:
+                    pass
+                else:
+                    pass
+                    file_list.append(m)
+
+        with open(mkt + "data.json", "w") as f:
+            json.dump(file_list, f)
+
+    except FileNotFoundError:
+        init_file(mkt, count)
+
+def init_file(mkt, count=20):
+    with open(mkt + "data.json", "w") as f:
+        json.dump(bitty.get_market_history(mkt, count)['result'], f)
+        print("Made initial", mkt, "data file.")
+
+def main():
+    while True:
+        wrt_mkt_json("BTC-ETH", 20)
+        wrt_mkt_json("BTC-VTC", 20)
+        #wrt_mkt_json("ETH-VTC", 20)
+        print("done")
+        sleep(10)
+
+
+if __name__ == "__main__":
+    main()
