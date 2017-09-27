@@ -86,9 +86,9 @@ def init_liquidity_asset():
     eth_bal = bitty.get_balance("ETH")['result']['Balance']
     btc_bal = bitty.get_balance("BTC")['result']['Balance']
     if eth_bal > btc_bal:
-        return("ETH", eth_bal*.1)
+        return("ETH", eth_bal)
     if eth_bal < btc_bal:
-        return("BTC", btc_bal*.1)
+        return("BTC", btc_bal)
     else:
         return(None)
 def main():
