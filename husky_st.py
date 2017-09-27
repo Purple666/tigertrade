@@ -79,7 +79,7 @@ def put_ask(curr, depth, asset, price, price2):
     """
     #Transaction 1
     tmp_list = bitty.buy_limit(asset+"-"+curr, depth, price)
-    time.sleep(15) #wait for network latency
+    time.sleep(5) #wait for network latency
     wait = 0
     while wait < 15:
         oList = bitty.get_open_orders(asset + "-" + curr)['result']
@@ -87,12 +87,9 @@ def put_ask(curr, depth, asset, price, price2):
             wait += 1
             print("Alt order outstanding")
         else:#order is filled, switch liquidity assets
-            if asset == "BTC":
-                asset = "ETH"
-            if asset == "ETH":
-                asset = "BTC"
             break
         time.sleep(1)
+    print(wait)
     if wait == 15: #if it's been 15 seconds and the order is not filled, cancel it
 
         for o in oList:
@@ -101,13 +98,18 @@ def put_ask(curr, depth, asset, price, price2):
         time.sleep(5)
         if asset == "BTC":
             asset = "ETH"
-        if asset == "ETH":
+        elif asset == "ETH":
             asset = "BTC"
-        depth_to_main = bitty.get_balance(curr)  # gets exact balance of the altcoin, including dust
+        bal_result = bitty.get_balance(curr)['result']  # gets exact balance of the altcoin, including dust
+        depth_to_main = bal_result['Balance']
         print("Order canceled, submitting sell order for any quantity filled.")
-        tmp_list = bitty.sell_limit(asset + "-" + curr, depth_to_main, price2)
+        bitty.sell_limit(asset + "-" + curr, depth_to_main, price2)
         return(asset) #back to searching
 
+    if asset == "BTC":
+        asset = "ETH"
+    elif asset == "ETH":
+        asset = "BTC"
 
     #Transaction 2
     bal_result = bitty.get_balance(curr)['result']  # gets exact balance of the altcoin, including dust
@@ -121,25 +123,13 @@ def put_ask(curr, depth, asset, price, price2):
         tmp_list = bitty.sell_limit(asset + "-" + curr, depth_to_main, price2)
 
     time.sleep(15)#wait for latency
-    wait = 0
+    wait = 5
     oList= []
     while wait < 86400: #wait ten minutes
-        print(asset + curr + "test1")
         oList = bitty.get_open_orders(asset + "-" + curr)['result']
-        print(oList)
         if oList:
             wait += 5
-            if wait > 43200:
-                price2 = recast_lower_sell(oList, asset, curr, price2)
-            elif wait > 21600:
-                price2 = recast_lower_sell(oList, asset, curr,  price2)
-            elif wait > 10800:
-                price2 = recast_lower_sell(oList, asset, curr,  price2)
-            elif wait > 5400:
-                price2 = recast_lower_sell(oList, asset, curr, price2)
-            elif wait > 2700:
-                price2 = recast_lower_sell(oList, asset, curr, price2)
-            elif wait > 1350:
+            if wait % 60 == 0:
                 price2 = recast_lower_sell(oList, asset, curr, price2)
             #elif wait > 675:
             #    price2 = recast_lower_sell(oList, asset, curr, depth_to_main, price2)
@@ -156,12 +146,12 @@ def recast_lower_sell(oList, asset, curr, price):
     for o in oList:
         orderId = o['OrderUuid']
     bitty.cancel(orderId)
-    time.sleep(30)
+    time.sleep(10)
     bal_result = bitty.get_balance(curr)['result']  # gets exact balance of the altcoin, including dust
     depth = bal_result['Balance']
     price = price * TOLERANCE()
     bitty.sell_limit(asset + "-" + curr, depth, price)
-    time.sleep(30)
+    time.sleep(5)
     return(price)
 
 def BITTREX_FEE():
