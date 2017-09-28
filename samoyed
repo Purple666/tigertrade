@@ -1,6 +1,6 @@
 from itertools import cycle
 from bittrex import Bittrex
-mybittrex = Bittrex('526082ed5c054871a6700337c1310a8b', '6fcd39a47e43433f93e1f5a7480d3419')
+mybittrex = Bittrex('', '')
 
 initialBalance=1
 ccycler = cycle(['BTC', 'ETH'])
