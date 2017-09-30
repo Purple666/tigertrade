@@ -1,8 +1,9 @@
+import time
 from itertools import cycle
 from bittrex import Bittrex
 mybittrex = Bittrex('', '')
 
-initialBalance=1
+initialBalance=0
 ccycler = cycle(['BTC', 'ETH'])
 curr1, curr2 = next(ccycler), next(ccycler)
 
@@ -30,13 +31,14 @@ def run():
 
 #retrieves balance information from account
 def getBalance():
+    global initialBalance
     initialBalance = mybittrex.get_balance(curr1)['result']['Balance']
-    print("Starting funds:", initialBalance, curr1, "(~ $", format(initialBalance*getValue('USDT', curr1), ".2f"), ")\n")
+    print("Starting funds:", initialBalance, curr1, "(~ $", format(initialBalance*getValue('USDT', curr1, "buy"), ".2f"), ")\n")
 
 #gets most recent rate from market history
-def getValue(s, t):
+def getValue(s, t, trans):
     market = s + "-" + t
-    return mybittrex.get_market_history(market)['result'][0]['Price']
+    return mybittrex.get_orderbook(market, trans)['result'][0]['Rate']
 
 def check():
     global initialBalance
@@ -48,38 +50,43 @@ def check():
             coin = currencyIterator.__next__()
         except StopIteration:
             det = calculation(curr1, curr2)
-            break
+            currencyIterator=iter(currencylist)
+            coin = currencyIterator.__next__()
 
 def calculation(*args):
     global initialBalance
     global ethflag
     argIter = iter(args)
     arg1, arg2 = argIter.__next__(), argIter.__next__()
+    rate1 = getValue(arg1, arg2, "sell")
     testInitialBalance = round(.9975*initialBalance , 8)
     print("Initial balance:", testInitialBalance, arg1)
-    testAltBalance = round(.9975*testInitialBalance/getValue(arg1, arg2), 8)
+    testAltBalance = round(.9975*testInitialBalance/rate1, 8)
     print("Resulting", arg2, "balance:", testAltBalance)
     try:
         arg3=argIter.__next__()
-        testFinalBalance = round(testAltBalance*getValue(arg3, arg2), 8)
+        rate2 = getValue(arg3, arg2, "buy")
+        testFinalBalance = round(testAltBalance*rate2, 8)
         print("Resulting", arg3, "balance:", testFinalBalance)
-        diff = (testFinalBalance*getValue('USDT', arg3))/(testInitialBalance*getValue('USDT', arg1))
+        diff = (testFinalBalance*getValue('USDT', arg3, "buy"))/(testInitialBalance*getValue('USDT', arg1, "buy"))
     except StopIteration:
-        diff = (testAltBalance*getValue('USDT', arg2))/(testInitialBalance*getValue('USDT', arg1))
+        diff = (testAltBalance*getValue('USDT', arg2, "buy"))/(testInitialBalance*getValue('USDT', arg1, "buy"))
     print("Result is", 100*diff, "% of initial balance.")
     if diff>1:
         market = arg1 + '-' + arg2
         print("First transaction...")
-        if (mybittrex.buy_limit(market, testInitialBalance/getValue(arg1, arg2), getValue(arg1, arg2))['success'] == 1):
+        if (mybittrex.buy_limit(market, testInitialBalance/rate1, rate1)['success'] == 1):
+            time.sleep(1)
             while mybittrex.get_open_orders()['result']:
-                pass
+                time.sleep(7)
             print("Complete.")
             try:
                 market2 = arg3 + '-' + arg2
                 print("Second transaction...")
-                if (mybittrex.sell_limit(market2, .9975*mybittrex.get_balance(arg2)['result']['Balance']*getValue(arg3, arg2), getValue(arg3, arg2)['success'] == 1)):
+                if mybittrex.sell_limit(market2, .9975*mybittrex.get_balance(arg2)['result']['Balance']*rate2, rate2)['success'] == 1:
+                    time.sleep(1)
                     while mybittrex.get_open_orders()['result']:
-                        pass
+                        time.sleep(7)
                     print("Complete.")
                 else:
                     print("Funds in", arg2, "cannot complete transaction.")
@@ -91,6 +98,8 @@ def calculation(*args):
             setUp()
         else:
             print("Funds in", arg1, "cannot complete transaction.")
+            print(testInitialBalance)
+            print(mybittrex.buy_limit(market, testInitialBalance/rate1, rate1))
             exit()
         return 1
     else:
