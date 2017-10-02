@@ -1,7 +1,7 @@
 from itertools import cycle
 import time
 from bittrex import Bittrex
-mybittrex = Bittrex('2863cfd87a4f4b129a088c8f6d85a9f1', 'aea8b6ed946943f78053e160ba3310e6')
+mybittrex = Bittrex('', '')
 
 def run():
     try:
